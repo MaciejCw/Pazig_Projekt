@@ -1,7 +1,32 @@
 import tkinter as tk
 from homepage import HomePage
+from fridgePage import FridgePage
+from recipiesPage import RecipiesPage
+
+class App:
+    def __init__(self, root):
+        self.root = root
+        self.current_frame = None
+        self.show_home()
+
+    def clear_window(self):
+        for widget in self.root.winfo_children():
+            widget.destroy()
+
+    def show_home(self):
+        self.clear_window()
+        HomePage(self.root, self.show_fridge, self.show_recipes)
+
+    def show_fridge(self):
+        self.clear_window()
+        FridgePage(self.root, self.show_home, self.show_recipes)
+
+    def show_recipes(self):
+        self.clear_window()
+        RecipiesPage(self.root, self.show_fridge, self.show_home)
+
 
 if __name__ == "__main__":
     root = tk.Tk()
-    app = HomePage(root)
+    app = App(root)
     root.mainloop()
