@@ -37,6 +37,9 @@ class FridgePage:
             self.home_button,
             self.recipes_button
         ]
+        for btn in self.buttons:
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#555"))  # ciemniejsze tło
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#333" if b in self.buttons[:4] else "#444"))  # oryginalny kolor
         self.button_windows = [self.canvas.create_window(0, 0, window=btn, anchor="ne") for btn in self.buttons]
 
         self.master.bind("<Configure>", self.on_resize)

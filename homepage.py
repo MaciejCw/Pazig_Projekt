@@ -23,7 +23,12 @@ class HomePage:
         self.title_label = tk.Label(self.canvas, text="Welcome To Smart Fridge!", font=("Arial", 28, "bold"), fg="white", bg="black")
         self.fridge_button = tk.Button(self.canvas, text="Fridge", command=self.fridge_action, font=("Arial", 14), bg="#333", fg="white", relief="flat")
         self.recipes_button = tk.Button(self.canvas, text="Recipies", command=self.recipes_action, font=("Arial", 14), bg="#333", fg="white", relief="flat")
+        self.buttons = [self.fridge_button, self.recipes_button]
 
+# Efekt hover dla każdego przycisku
+        for btn in self.buttons:
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#555"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#333"))
         # Dodaj do canvas jako okna
         self.title_window = self.canvas.create_window(0, 0, window=self.title_label)
         self.recipes_window = self.canvas.create_window(0, 0, window=self.recipes_button)
