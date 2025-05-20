@@ -21,8 +21,6 @@ class FridgePage:
 
         # Lista składników (niedostępna do edycji)
         self.ingredient_listbox = tk.Listbox(self.canvas, font=("Arial", 12), height=20, width=30, activestyle='none')
-        self.ingredient_listbox.insert(tk.END, "Składnik 1")
-        self.ingredient_listbox.insert(tk.END, "Składnik 2")
         self.ingredient_listbox.config(state="disabled")  # blokuje interakcję
 
         # Przyciski
