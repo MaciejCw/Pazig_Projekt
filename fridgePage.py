@@ -27,8 +27,8 @@ class FridgePage:
         self.add_button = tk.Button(self.canvas, text="Dodaj składnik", font=("Arial", 12), bg="#333", fg="white", relief="flat", command=self.add_ingredient)
         self.remove_button = tk.Button(self.canvas, text="Usuń składnik", font=("Arial", 12), bg="#333", fg="white", relief="flat", command=self.remove_ingredient)
         self.edit_button = tk.Button(self.canvas, text="Edytuj składnik", font=("Arial", 12), bg="#333", fg="white", relief="flat", command=self.edit_ingredient)
-        self.home_button = tk.Button(self.canvas, text="Home Page", font=("Arial", 12), bg="#555", fg="white", relief="flat", command=self.go_home_callback)
-        self.recipes_button = tk.Button(self.canvas, text="Recipies", font=("Arial", 12), bg="#555", fg="white", relief="flat", command=self.go_recipes_callback)
+        self.home_button = tk.Button(self.canvas, text="Strona główna", font=("Arial", 12), bg="#555", fg="white", relief="flat", command=self.go_home_callback)
+        self.recipes_button = tk.Button(self.canvas, text="Przepisy", font=("Arial", 12), bg="#555", fg="white", relief="flat", command=self.go_recipes_callback)
 
         
         self.listbox_window = self.canvas.create_window(0, 0, window=self.ingredient_listbox, anchor="nw")

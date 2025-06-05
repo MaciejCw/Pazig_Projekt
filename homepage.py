@@ -20,9 +20,9 @@ class HomePage:
         self.bg_image_id = self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
         
-        self.title_label = tk.Label(self.canvas, text="Welcome To Smart Fridge!", font=("Arial", 28, "bold"), fg="white", bg="black")
-        self.fridge_button = tk.Button(self.canvas, text="Fridge", command=self.fridge_action, font=("Arial", 14), bg="#333", fg="white", relief="flat")
-        self.recipes_button = tk.Button(self.canvas, text="Recipies", command=self.recipes_action, font=("Arial", 14), bg="#333", fg="white", relief="flat")
+        self.title_label = tk.Label(self.canvas, text="Witaj w inteligentnej lodówce!", font=("Arial", 28, "bold"), fg="white", bg="black")
+        self.fridge_button = tk.Button(self.canvas, text="Lodówka", command=self.fridge_action, font=("Arial", 14), bg="#333", fg="white", relief="flat")
+        self.recipes_button = tk.Button(self.canvas, text="Przepisy", command=self.recipes_action, font=("Arial", 14), bg="#333", fg="white", relief="flat")
         self.buttons = [self.fridge_button, self.recipes_button]
 
 
