@@ -2,6 +2,8 @@ import tkinter as tk
 from PIL import Image, ImageTk
 from recipe_db import initialize_recipe_database
 import sqlite3
+from tkinter import messagebox
+
 class RecipiesPage:
     def __init__(self, master, go_to_fridge_callback, go_to_home_callback):
         self.master = master
@@ -21,10 +23,11 @@ class RecipiesPage:
         self.recipe_listbox.config(state="disabled")
 
         
-        self.show_button = tk.Button(self.canvas, text="Wyświetl\ndostępne przepisy", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.show_recipes)
+        self.show_button = tk.Button(self.canvas, text="Wyświetl\ndostępne przepisy", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.show_available_recipes)
         self.add_button = tk.Button(self.canvas, text="Dodaj przepis", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.add_recipe)
         self.remove_button = tk.Button(self.canvas, text="Usuń przepis", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.remove_recipe)
         self.edit_button = tk.Button(self.canvas, text="Edytuj przepis", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.edit_recipe)
+        self.refresh_button = tk.Button(self.canvas, text="Odśwież\nprzepisy", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.refresh_recipe_list)
         self.home_button = tk.Button(self.canvas, text="Homepage", font=("Arial", 14), bg="#555", fg="white", relief="flat", command=self.go_to_home_callback)
         self.fridge_button = tk.Button(self.canvas, text="Fridge", font=("Arial", 14), bg="#555", fg="white", relief="flat", command=self.go_to_fridge_callback)
         
@@ -36,13 +39,14 @@ class RecipiesPage:
             self.add_button,
             self.remove_button,
             self.edit_button,
+            self.refresh_button,
             self.fridge_button,
             self.home_button
   
         ]
         for btn in self.buttons:
             btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#555"))  
-            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#333" if b in self.buttons[:4] else "#444"))  # oryginalny kolor
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#333" if b in self.buttons[:5] else "#444"))  
         self.button_windows = [self.canvas.create_window(0, 0, window=btn, anchor="ne") for btn in self.buttons]
 
         self.master.bind("<Configure>", self.on_resize)
@@ -67,63 +71,91 @@ class RecipiesPage:
             self.canvas.coords(window, width - 60, start_y + i * spacing)
 
 
-    def show_recipes(self):
+    def show_available_recipes(self):
+        self.recipe_listbox.config(state="normal")
+        self.recipe_listbox.delete(0, tk.END)
 
-        pass
+        conn_fridge = sqlite3.connect("fridge.db")
+        c_fridge = conn_fridge.cursor()
+        c_fridge.execute("SELECT name, amount, unit FROM ingredients")
+        fridge_ingredients = c_fridge.fetchall()
+        conn_fridge.close()
+
+        fridge_dict = {(name.lower(), unit): amount for name, amount, unit in fridge_ingredients}
+
+        conn = sqlite3.connect("recipes.db")
+        c = conn.cursor()
+        c.execute("SELECT id, name FROM recipes ORDER BY name")
+        recipes = c.fetchall()
+
+        for recipe_id, recipe_name in recipes:
+            c.execute("SELECT ingredient_name, amount, unit FROM recipe_ingredients WHERE recipe_id = ?", (recipe_id,))
+            ingredients = c.fetchall()
+
+            can_make = True
+            for ing_name, ing_amount, ing_unit in ingredients:
+                key = (ing_name.lower(), ing_unit)
+                if key not in fridge_dict or fridge_dict[key] < ing_amount:
+                    can_make = False
+                    break
+
+            if can_make:
+                self.recipe_listbox.insert(tk.END, recipe_name)
+
+        conn.close()
+        
+        if self.recipe_listbox.size() == 0:
+            self.recipe_listbox.insert(tk.END, "Brak dostępnych przepisów.")
+        self.recipe_listbox.config(state="disabled")
+
 
     def add_recipe(self):
         top = tk.Toplevel(self.master)
         top.title("Dodaj przepis")
 
-        def browse_image():
-            from tkinter import filedialog
-            path = filedialog.askopenfilename(filetypes=[("Obrazy", "*.jpg *.png *.jpeg")])
-            if path:
-                image_entry.delete(0, tk.END)
-                image_entry.insert(0, path)
-
-        def confirm_add():
-            name = name_entry.get().strip()
-            ingredients = ingredients_text.get("1.0", tk.END).strip()
-            instructions = instructions_text.get("1.0", tk.END).strip()
-            image_path = image_entry.get().strip()
-
-            if not name or not ingredients:
-                return
-            
-            ingredients_raw = ingredients_text.get("1.0", tk.END).strip()
-            ingredients = []
-            for item in ingredients_raw.split(";"):
-                parts = item.strip().split(":")
-                if len(parts) == 3:
-                    ing_name, ing_amount, ing_unit = parts
-                try:
-                    ing_amount = float(ing_amount)
-                    ingredients.append((ing_name.strip(), ing_amount, ing_unit.strip()))
-                except ValueError:
-                    continue  
-
-            conn = sqlite3.connect("recipes.db")
-            c = conn.cursor()
-            c.execute("INSERT INTO recipes (name, instructions, image_path) VALUES (?, ?, ?)", (name, instructions, image_path))
-            recipe_id = c.lastrowid
-
-            for ing_name, ing_amount, ing_unit in ingredients:
-                c.execute("INSERT INTO recipe_ingredients (recipe_id, ingredient_name, amount, unit) VALUES (?, ?, ?, ?)",
-              (recipe_id, ing_name, ing_amount, ing_unit))
-                
-            conn.commit()
-            conn.close()
-            top.destroy()
-            self.refresh_recipe_list()
-
-        tk.Label(top, text="Nazwa:").pack()
+        tk.Label(top, text="Nazwa przepisu:").pack()
         name_entry = tk.Entry(top)
         name_entry.pack()
 
-        tk.Label(top, text="Składniki (format: mleko:200:ml;cukier:50:g):").pack()
-        ingredients_text = tk.Text(top, height=5)
-        ingredients_text.pack()
+        ingredient_frame = tk.Frame(top)
+        ingredient_frame.pack(pady=10)
+
+        ingredient_list = []
+
+        def add_ingredient_popup():
+            popup = tk.Toplevel(top)
+            popup.title("Dodaj składnik")
+
+            tk.Label(popup, text="Nazwa:").pack()
+            name_field = tk.Entry(popup)
+            name_field.pack()
+
+            tk.Label(popup, text="Ilość:").pack()
+            amount_field = tk.Entry(popup)
+            amount_field.pack()
+
+            tk.Label(popup, text="Jednostka:").pack()
+            unit_var = tk.StringVar(popup)
+            unit_var.set("g")
+            unit_menu = tk.OptionMenu(popup, unit_var, "szt.", "ml", "g", "kg", "l", "opak.")
+            unit_menu.pack()
+
+            def confirm_ingredient():
+                name = name_field.get().strip()
+                try:
+                    amount = float(amount_field.get())
+                except ValueError:
+                    return
+                unit = unit_var.get()
+                if name:
+                    ingredient_list.append((name, amount, unit))
+                    ingredient_label = tk.Label(ingredient_frame, text=f"{name} - {amount} {unit}")
+                    ingredient_label.pack(anchor="w")
+                popup.destroy()
+
+            tk.Button(popup, text="Dodaj", command=confirm_ingredient).pack(pady=5)
+
+        tk.Button(top, text="Dodaj składnik", command=add_ingredient_popup).pack()
 
         tk.Label(top, text="Sposób przygotowania:").pack()
         instructions_text = tk.Text(top, height=5)
@@ -132,9 +164,40 @@ class RecipiesPage:
         tk.Label(top, text="Ścieżka do zdjęcia:").pack()
         image_entry = tk.Entry(top)
         image_entry.pack()
+
+        def browse_image():
+            from tkinter import filedialog
+            path = filedialog.askopenfilename(filetypes=[("Obrazy", "*.jpg *.png *.jpeg")])
+            if path:
+                image_entry.delete(0, tk.END)
+                image_entry.insert(0, path)
+
         tk.Button(top, text="Przeglądaj...", command=browse_image).pack()
 
+        def confirm_add():
+            name = name_entry.get().strip()
+            instructions = instructions_text.get("1.0", tk.END).strip()
+            image_path = image_entry.get().strip()
+
+            if not name or not ingredient_list:
+                return
+
+            conn = sqlite3.connect("recipes.db")
+            c = conn.cursor()
+            c.execute("INSERT INTO recipes (name, instructions, image_path) VALUES (?, ?, ?)", (name, instructions, image_path))
+            recipe_id = c.lastrowid
+
+            for ing_name, ing_amount, ing_unit in ingredient_list:
+                c.execute("INSERT INTO recipe_ingredients (recipe_id, ingredient_name, amount, unit) VALUES (?, ?, ?, ?)",
+                          (recipe_id, ing_name, ing_amount, ing_unit))
+
+            conn.commit()
+            conn.close()
+            top.destroy()
+            self.refresh_recipe_list()
+
         tk.Button(top, text="Dodaj przepis", command=confirm_add).pack(pady=5)
+
 
 
     def remove_recipe(self):
@@ -169,90 +232,150 @@ class RecipiesPage:
 
 
     def edit_recipe(self):
-        top = tk.Toplevel(self.master)
-        top.title("Edytuj przepis")
-
-        conn = sqlite3.connect("recipes.db")
-        c = conn.cursor()
-        c.execute("SELECT id, name FROM recipes ORDER BY name ASC")
-        recipes = c.fetchall()
-        conn.close()
-
-        selected = tk.StringVar(top)
-        if recipes:
-            selected.set(recipes[0][1])
-        names_to_ids = {name: rid for rid, name in recipes}
-
-        tk.Label(top, text="Wybierz przepis:").pack()
-        tk.OptionMenu(top, selected, *names_to_ids.keys()).pack()
-        
-        def load_recipe():
-            rid = names_to_ids[selected.get()]
+        def open_editor_for(recipe_name):
             conn = sqlite3.connect("recipes.db")
             c = conn.cursor()
-            c.execute("SELECT name, instructions, image_path FROM recipes WHERE id=?", (rid,))
-            name, instructions, image_path = c.fetchone()
+            c.execute("SELECT id, instructions, image_path FROM recipes WHERE name=?", (recipe_name,))
+            result = c.fetchone()
+            if not result:
+                conn.close()
+                return
 
-            c.execute("SELECT ingredient_name, amount, unit FROM recipe_ingredients WHERE recipe_id=?", (rid,))
-            ingredients_rows = c.fetchall()
+            recipe_id, instructions, image_path = result
+            c.execute("SELECT ingredient_name, amount, unit FROM recipe_ingredients WHERE recipe_id=?", (recipe_id,))
+            ingredients = c.fetchall()
             conn.close()
 
-            ingredients = ";".join([f"{n}:{a}:{u}" for n, a, u in ingredients_rows])
+            top = tk.Toplevel(self.master)
+            top.title("Edytuj przepis")
 
-            edit_win = tk.Toplevel(top)
-            edit_win.title(f"Edytuj: {name}")
-
-            tk.Label(edit_win, text="Nazwa:").pack()
-            name_entry = tk.Entry(edit_win)
-            name_entry.insert(0, name)
+            tk.Label(top, text="Nazwa przepisu:").pack()
+            name_entry = tk.Entry(top)
+            name_entry.insert(0, recipe_name)
             name_entry.pack()
 
-            tk.Label(edit_win, text="Składniki:").pack()
-            ingredients_text = tk.Text(edit_win, height=5)
-            ingredients_text.insert("1.0", ingredients)
-            ingredients_text.pack()
+            ingredient_frame = tk.Frame(top)
+            ingredient_frame.pack(pady=10)
 
-            tk.Label(edit_win, text="Instrukcje:").pack()
-            instructions_text = tk.Text(edit_win, height=5)
+            ingredient_list = list(ingredients)
+
+            def refresh_ingredient_display():
+                for widget in ingredient_frame.winfo_children():
+                    widget.destroy()
+                for name, amount, unit in ingredient_list:
+                    tk.Label(ingredient_frame, text=f"{name} - {amount} {unit}").pack(anchor="w")
+
+            def add_ingredient_popup():
+                popup = tk.Toplevel(top)
+                popup.title("Dodaj składnik")
+
+                tk.Label(popup, text="Nazwa:").pack()
+                name_field = tk.Entry(popup)
+                name_field.pack()
+
+                tk.Label(popup, text="Ilość:").pack()
+                amount_field = tk.Entry(popup)
+                amount_field.pack()
+
+                tk.Label(popup, text="Jednostka:").pack()
+                unit_var = tk.StringVar(popup)
+                unit_var.set("g")
+                unit_menu = tk.OptionMenu(popup, unit_var, "szt.", "ml", "g", "kg", "l", "opak.")
+                unit_menu.pack()
+
+                def confirm_ingredient():
+                    name = name_field.get().strip()
+                    try:
+                        amount = float(amount_field.get().replace(",", "."))
+                    except ValueError:
+                        messagebox.showwarning("Błąd", "Podaj poprawną liczbę jako ilość.")
+                        return
+                    unit = unit_var.get()
+                    if name:
+                        ingredient_list.append((name, amount, unit))
+                        refresh_ingredient_display()
+                    popup.destroy()
+
+                tk.Button(popup, text="Dodaj", command=confirm_ingredient).pack(pady=5)
+
+            tk.Button(top, text="Dodaj składnik", command=add_ingredient_popup).pack()
+            refresh_ingredient_display()
+
+            tk.Label(top, text="Sposób przygotowania:").pack()
+            instructions_text = tk.Text(top, height=5)
             instructions_text.insert("1.0", instructions)
             instructions_text.pack()
 
-            tk.Label(edit_win, text="Obraz:").pack()
-            image_entry = tk.Entry(edit_win)
+            tk.Label(top, text="Ścieżka do zdjęcia:").pack()
+            image_entry = tk.Entry(top)
             image_entry.insert(0, image_path)
             image_entry.pack()
 
-            def update():
+            def browse_image():
+                from tkinter import filedialog
+                path = filedialog.askopenfilename(filetypes=[("Obrazy", "*.jpg *.png *.jpeg")])
+                if path:
+                    image_entry.delete(0, tk.END)
+                    image_entry.insert(0, path)
+
+            tk.Button(top, text="Przeglądaj...", command=browse_image).pack()
+
+            def confirm_edit():
                 new_name = name_entry.get().strip()
-                new_ingredients_text = ingredients_text.get("1.0", tk.END).strip()
                 new_instructions = instructions_text.get("1.0", tk.END).strip()
                 new_image_path = image_entry.get().strip()
 
+                if not new_name or not ingredient_list:
+                    messagebox.showwarning("Błąd", "Wprowadź nazwę przepisu i przynajmniej jeden składnik.")
+                    return
+
                 conn = sqlite3.connect("recipes.db")
                 c = conn.cursor()
-                c.execute("""UPDATE recipes SET name=?, instructions=?, image_path=? WHERE id=?""",
-                    (new_name, new_instructions, new_image_path, rid))
 
-                c.execute("DELETE FROM recipe_ingredients WHERE recipe_id=?", (rid,))
+                c.execute("UPDATE recipes SET name=?, instructions=?, image_path=? WHERE id=?",
+                        (new_name, new_instructions, new_image_path, recipe_id))
 
-        
-                if new_ingredients_text:
-                    for part in new_ingredients_text.split(";"):
-                        try:
-                            ing_name, ing_amount, ing_unit = part.strip().split(":")
-                            c.execute("INSERT INTO recipe_ingredients (recipe_id, ingredient_name, amount, unit) VALUES (?, ?, ?, ?)",
-                                  (rid, ing_name, int(ing_amount), ing_unit))
-                        except ValueError:
-                            continue
+                c.execute("DELETE FROM recipe_ingredients WHERE recipe_id=?", (recipe_id,))
+                for ing_name, ing_amount, ing_unit in ingredient_list:
+                    c.execute("INSERT INTO recipe_ingredients (recipe_id, ingredient_name, amount, unit) VALUES (?, ?, ?, ?)",
+                            (recipe_id, ing_name, ing_amount, ing_unit))
 
                 conn.commit()
                 conn.close()
-                edit_win.destroy()
                 top.destroy()
                 self.refresh_recipe_list()
 
-            tk.Button(edit_win, text="Zapisz zmiany", command=update).pack(pady=5)
-        tk.Button(top, text="Załaduj przepis", command=load_recipe).pack(pady=5)
+            tk.Button(top, text="Zapisz zmiany", command=confirm_edit).pack(pady=5)
+
+        choose_window = tk.Toplevel(self.master)
+        choose_window.title("Wybierz przepis do edycji")
+
+        tk.Label(choose_window, text="Wybierz przepis do edycji:").pack(pady=5)
+
+        recipe_listbox = tk.Listbox(choose_window, height=10, width=40)
+        recipe_listbox.pack(padx=10, pady=5)
+
+        conn = sqlite3.connect("recipes.db")
+        c = conn.cursor()
+        c.execute("SELECT name FROM recipes ORDER BY name")
+        recipes = [row[0] for row in c.fetchall()]
+        conn.close()
+
+        for recipe in recipes:
+            recipe_listbox.insert(tk.END, recipe)
+
+        def confirm_selection():
+            selection = recipe_listbox.curselection()
+            if not selection:
+                messagebox.showinfo("Brak wyboru", "Wybierz przepis z listy.")
+                return
+            recipe_name = recipe_listbox.get(selection[0])
+            choose_window.destroy()
+            open_editor_for(recipe_name)
+
+        tk.Button(choose_window, text="Dalej", command=confirm_selection).pack(pady=5)
+
+
 
     def refresh_recipe_list(self):
         conn = sqlite3.connect("recipes.db")
