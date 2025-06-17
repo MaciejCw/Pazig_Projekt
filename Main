@@ -10,9 +10,18 @@ class App:
         self.show_home()
 
     def clear_window(self):
+        if self.current_frame:
+            if hasattr(self.current_frame, "destroy"):
+                self.current_frame.destroy()
+            else:
+                try:
+                    self.current_frame.destroy()  
+                except:
+                    pass
         for widget in self.root.winfo_children():
             widget.destroy()
-
+        self.current_frame = None
+        
     def show_home(self):
         self.clear_window()
         HomePage(self.root, self.show_fridge, self.show_recipes)

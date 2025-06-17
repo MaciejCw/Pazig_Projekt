@@ -11,10 +11,10 @@ class FridgePage:
 
         initialize_database()
 
-        # Style
+        
         self.button_style = {
             "font": ("Arial", 12, "bold"),
-            "bg": "#007acc",  # niebieski
+            "bg": "#007acc",  
             "fg": "white",
             "activebackground": "#005f99",
             "activeforeground": "white",
@@ -44,8 +44,11 @@ class FridgePage:
         self.background_photo = ImageTk.PhotoImage(self.background_image)
         self.bg_image_id = self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
-        self.ingredient_listbox = tk.Listbox(self.canvas, font=("Arial", 12), height=20, width=30, activestyle='none')
-        self.ingredient_listbox.config(state="disabled")
+        self.ingredient_frame = tk.Frame(self.canvas, bg="#f5faff")
+        self.listbox_window = self.canvas.create_window(0, 0, window=self.ingredient_frame, anchor="nw")
+        self.ingredient_frame.update_idletasks()
+        self.canvas.itemconfig(self.listbox_window, width=300)
+
 
         self.add_button = tk.Button(self.canvas, text="Dodaj składnik", command=self.add_ingredient, **self.button_style)
         self.remove_button = tk.Button(self.canvas, text="Usuń składnik", command=self.remove_ingredient, **self.button_style)
@@ -53,7 +56,6 @@ class FridgePage:
         self.home_button = tk.Button(self.canvas, text="Strona główna", command=self.go_home_callback, **self.button_style)
         self.recipes_button = tk.Button(self.canvas, text="Przepisy", command=self.go_recipes_callback, **self.button_style)
 
-        self.listbox_window = self.canvas.create_window(0, 0, window=self.ingredient_listbox, anchor="nw")
 
         self.buttons = [
             self.add_button,
@@ -74,32 +76,53 @@ class FridgePage:
         self.refresh_ingredient_list()
 
     def on_resize(self, event):
-        width = self.master.winfo_width()
-        height = self.master.winfo_height()
+        try:
+            if not self.canvas.winfo_exists():
+                return  
 
-        resized_bg = self.background_image.resize((width, height), resample=Image.Resampling.LANCZOS)
-        self.background_photo = ImageTk.PhotoImage(resized_bg)
-        self.canvas.itemconfig(self.bg_image_id, image=self.background_photo)
+            width = self.master.winfo_width()
+            height = self.master.winfo_height()
 
-        self.canvas.coords(self.listbox_window, 20, int(height * 0.2))
+            resized_bg = self.background_image.resize((width, height), resample=Image.Resampling.LANCZOS)
+            self.background_photo = ImageTk.PhotoImage(resized_bg)
+            self.canvas.itemconfig(self.bg_image_id, image=self.background_photo)
 
-        spacing = 50
-        start_y = int(height * 0.25)
-        for i, window in enumerate(self.button_windows):
-            self.canvas.coords(window, width - 20, start_y + i * spacing)
+            self.canvas.coords(self.listbox_window, 20, int(height * 0.2))
+            self.canvas.itemconfig(self.listbox_window, width=300, height=int(height * 0.6))
+
+            spacing = 50
+            start_y = int(height * 0.25)
+            for i, window in enumerate(self.button_windows):
+                self.canvas.coords(window, width - 20, start_y + i * spacing)
+
+        except tk.TclError:
+            pass
+
+
 
     def refresh_ingredient_list(self):
+        for widget in self.ingredient_frame.winfo_children():
+            widget.destroy()
+
         conn = sqlite3.connect("fridge.db")
         c = conn.cursor()
-        c.execute("SELECT name, amount, unit FROM ingredients")
+        c.execute("SELECT name, amount, unit FROM ingredients ORDER BY name ASC")
         rows = c.fetchall()
         conn.close()
 
-        self.ingredient_listbox.config(state="normal")
-        self.ingredient_listbox.delete(0, tk.END)
-        for row in rows:
-            self.ingredient_listbox.insert(tk.END, f"{row[0]}: {row[1]} {row[2]}")
-        self.ingredient_listbox.config(state="disabled")
+        for name, amount, unit in rows:
+            row_frame = tk.Frame(self.ingredient_frame, bg="#f5faff")
+            row_frame.pack(anchor="w", pady=2, padx=5)
+
+            bullet = tk.Label(row_frame, text="•", fg="#007acc", bg="#f5faff", font=("Arial", 12, "bold"))
+            bullet.pack(side="left")
+
+            name_label = tk.Label(row_frame, text=name, font=("Arial", 12, "bold"), bg="#f5faff", fg="black")
+            name_label.pack(side="left", padx=(5, 2))
+
+            amount_label = tk.Label(row_frame, text=f"{amount} {unit}", font=("Arial", 12), bg="#f5faff", fg="black")
+            amount_label.pack(side="left")
+
 
     def add_ingredient(self):
         def confirm_add(selected_unit):
