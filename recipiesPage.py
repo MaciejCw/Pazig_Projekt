@@ -18,22 +18,35 @@ class RecipiesPage:
         self.background_photo = ImageTk.PhotoImage(self.background_image)
         self.bg_image_id = self.canvas.create_image(0, 0, image=self.background_photo, anchor="nw")
 
-        
-        self.recipe_listbox = tk.Listbox(self.canvas, font=("Arial", 12), height=15, width=35, activestyle='none')
+        self.recipe_listbox = tk.Listbox(
+            self.canvas,
+            font=("Arial", 13),
+            height=15,
+            width=35,
+            activestyle='none',
+            bg="#f0f8ff",
+            fg="#003366",
+            relief="flat",
+            highlightbackground="#007acc",
+            highlightcolor="#007acc",
+            highlightthickness=1,
+            selectbackground="#cce6ff",
+            selectforeground="#000000"
+        )
         self.recipe_listbox.config(state="disabled")
 
-        
-        self.show_button = tk.Button(self.canvas, text="Wyświetl\ndostępne przepisy", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.show_available_recipes)
-        self.add_button = tk.Button(self.canvas, text="Dodaj przepis", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.add_recipe)
-        self.remove_button = tk.Button(self.canvas, text="Usuń przepis", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.remove_recipe)
-        self.edit_button = tk.Button(self.canvas, text="Edytuj przepis", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.edit_recipe)
-        self.refresh_button = tk.Button(self.canvas, text="Odśwież\nprzepisy", font=("Arial", 14), bg="#333", fg="white", relief="flat", command=self.refresh_recipe_list)
-        self.home_button = tk.Button(self.canvas, text="Homepage", font=("Arial", 14), bg="#555", fg="white", relief="flat", command=self.go_to_home_callback)
-        self.fridge_button = tk.Button(self.canvas, text="Fridge", font=("Arial", 14), bg="#555", fg="white", relief="flat", command=self.go_to_fridge_callback)
-        
+        # Przyciski (w odcieniach niebieskiego)
+        self.show_button = tk.Button(self.canvas, text="Wyświetl\ndostępne przepisy", font=("Arial", 13), bg="#007acc", fg="white", relief="flat", command=self.show_available_recipes)
+        self.add_button = tk.Button(self.canvas, text="Dodaj przepis", font=("Arial", 13), bg="#007acc", fg="white", relief="flat", command=self.add_recipe)
+        self.remove_button = tk.Button(self.canvas, text="Usuń przepis", font=("Arial", 13), bg="#007acc", fg="white", relief="flat", command=self.remove_recipe)
+        self.edit_button = tk.Button(self.canvas, text="Edytuj przepis", font=("Arial", 13), bg="#007acc", fg="white", relief="flat", command=self.edit_recipe)
+        self.refresh_button = tk.Button(self.canvas, text="Odśwież\nprzepisy", font=("Arial", 13), bg="#007acc", fg="white", relief="flat", command=self.refresh_recipe_list)
+        self.home_button = tk.Button(self.canvas, text="Strona główna", font=("Arial", 13), bg="#005c99", fg="white", relief="flat", command=self.go_to_home_callback)
+        self.fridge_button = tk.Button(self.canvas, text="Lodówka", font=("Arial", 13), bg="#005c99", fg="white", relief="flat", command=self.go_to_fridge_callback)
 
-        
+        # Umieszczanie elementów
         self.listbox_window = self.canvas.create_window(0, 0, window=self.recipe_listbox, anchor="nw")
+
         self.buttons = [
             self.show_button,
             self.add_button,
@@ -42,16 +55,18 @@ class RecipiesPage:
             self.refresh_button,
             self.fridge_button,
             self.home_button
-  
         ]
+
         for btn in self.buttons:
-            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#555"))  
-            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#333" if b in self.buttons[:5] else "#444"))  
+            btn.bind("<Enter>", lambda e, b=btn: b.config(bg="#3399ff"))
+            btn.bind("<Leave>", lambda e, b=btn: b.config(bg="#007acc" if b in self.buttons[:5] else "#005c99"))
+
         self.button_windows = [self.canvas.create_window(0, 0, window=btn, anchor="ne") for btn in self.buttons]
 
         self.master.bind("<Configure>", self.on_resize)
         self.master.after(1, lambda: self.on_resize(None))
         self.refresh_recipe_list()
+
     def on_resize(self, event):
         width = self.master.winfo_width()
         height = self.master.winfo_height()
@@ -60,15 +75,14 @@ class RecipiesPage:
         self.background_photo = ImageTk.PhotoImage(resized_bg)
         self.canvas.itemconfig(self.bg_image_id, image=self.background_photo)
 
-        
         self.canvas.coords(self.listbox_window, int(width * 0.15), int(height * 0.2))
 
-        
-        spacing = 70  
+        spacing = 70
         start_y = int(height * 0.25)
 
         for i, window in enumerate(self.button_windows):
             self.canvas.coords(window, width - 60, start_y + i * spacing)
+
 
 
     def show_available_recipes(self):
@@ -112,33 +126,38 @@ class RecipiesPage:
     def add_recipe(self):
         top = tk.Toplevel(self.master)
         top.title("Dodaj przepis")
+        top.configure(bg="#e6f2ff")
 
-        tk.Label(top, text="Nazwa przepisu:").pack()
-        name_entry = tk.Entry(top)
-        name_entry.pack()
+        font = ("Arial", 12)
 
-        ingredient_frame = tk.Frame(top)
-        ingredient_frame.pack(pady=10)
+        tk.Label(top, text="Nazwa przepisu:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
+        name_entry = tk.Entry(top, font=font, bg="white", fg="black")
+        name_entry.pack(fill="x", padx=10)
+
+        ingredient_frame = tk.Frame(top, bg="#e6f2ff")
+        ingredient_frame.pack(fill="x", padx=10, pady=10)
 
         ingredient_list = []
 
         def add_ingredient_popup():
             popup = tk.Toplevel(top)
             popup.title("Dodaj składnik")
+            popup.configure(bg="#e6f2ff")
 
-            tk.Label(popup, text="Nazwa:").pack()
-            name_field = tk.Entry(popup)
-            name_field.pack()
+            tk.Label(popup, text="Nazwa:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
+            name_field = tk.Entry(popup, font=font, bg="white", fg="black")
+            name_field.pack(fill="x", padx=10)
 
-            tk.Label(popup, text="Ilość:").pack()
-            amount_field = tk.Entry(popup)
-            amount_field.pack()
+            tk.Label(popup, text="Ilość:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
+            amount_field = tk.Entry(popup, font=font, bg="white", fg="black")
+            amount_field.pack(fill="x", padx=10)
 
-            tk.Label(popup, text="Jednostka:").pack()
+            tk.Label(popup, text="Jednostka:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
             unit_var = tk.StringVar(popup)
             unit_var.set("g")
             unit_menu = tk.OptionMenu(popup, unit_var, "szt.", "ml", "g", "kg", "l", "opak.")
-            unit_menu.pack()
+            unit_menu.config(bg="white", fg="black", font=font, activebackground="#007acc")
+            unit_menu.pack(fill="x", padx=10, pady=(0, 10))
 
             def confirm_ingredient():
                 name = name_field.get().strip()
@@ -149,21 +168,23 @@ class RecipiesPage:
                 unit = unit_var.get()
                 if name:
                     ingredient_list.append((name, amount, unit))
-                    ingredient_label = tk.Label(ingredient_frame, text=f"{name} - {amount} {unit}")
+                    ingredient_label = tk.Label(ingredient_frame, text=f"{name} - {amount} {unit}", bg="#e6f2ff", fg="black", font=font)
                     ingredient_label.pack(anchor="w")
                 popup.destroy()
 
-            tk.Button(popup, text="Dodaj", command=confirm_ingredient).pack(pady=5)
+            tk.Button(popup, text="Dodaj", command=confirm_ingredient,
+                bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=10)
 
-        tk.Button(top, text="Dodaj składnik", command=add_ingredient_popup).pack()
+        tk.Button(top, text="Dodaj składnik", command=add_ingredient_popup,
+            bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=(0, 10))
 
-        tk.Label(top, text="Sposób przygotowania:").pack()
-        instructions_text = tk.Text(top, height=5)
-        instructions_text.pack()
+        tk.Label(top, text="Sposób przygotowania:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10)
+        instructions_text = tk.Text(top, height=5, font=font, bg="white", fg="black")
+        instructions_text.pack(fill="x", padx=10, pady=(0, 10))
 
-        tk.Label(top, text="Ścieżka do zdjęcia:").pack()
-        image_entry = tk.Entry(top)
-        image_entry.pack()
+        tk.Label(top, text="Ścieżka do zdjęcia:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10)
+        image_entry = tk.Entry(top, font=font, bg="white", fg="black")
+        image_entry.pack(fill="x", padx=10)
 
         def browse_image():
             from tkinter import filedialog
@@ -172,7 +193,8 @@ class RecipiesPage:
                 image_entry.delete(0, tk.END)
                 image_entry.insert(0, path)
 
-        tk.Button(top, text="Przeglądaj...", command=browse_image).pack()
+        tk.Button(top, text="Przeglądaj...", command=browse_image,
+                bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=5)
 
         def confirm_add():
             name = name_entry.get().strip()
@@ -189,14 +211,16 @@ class RecipiesPage:
 
             for ing_name, ing_amount, ing_unit in ingredient_list:
                 c.execute("INSERT INTO recipe_ingredients (recipe_id, ingredient_name, amount, unit) VALUES (?, ?, ?, ?)",
-                          (recipe_id, ing_name, ing_amount, ing_unit))
+                        (recipe_id, ing_name, ing_amount, ing_unit))
 
             conn.commit()
             conn.close()
             top.destroy()
             self.refresh_recipe_list()
 
-        tk.Button(top, text="Dodaj przepis", command=confirm_add).pack(pady=5)
+        tk.Button(top, text="Dodaj przepis", command=confirm_add,
+                bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=10)
+
 
 
 
@@ -229,6 +253,17 @@ class RecipiesPage:
                 self.refresh_recipe_list()
 
         tk.Button(top, text="Usuń zaznaczone", bg="red", fg="white", command=confirm_delete).pack(pady=5)
+        
+        top.configure(bg="#e6f2ff")
+        for widget in top.winfo_children():
+            if isinstance(widget, tk.Label):
+                widget.configure(bg="#e6f2ff", fg="black", font=("Arial", 12))
+            elif isinstance(widget, tk.Entry) or isinstance(widget, tk.Text):
+                widget.configure(bg="white", fg="black", font=("Arial", 12))
+            elif isinstance(widget, tk.Button):
+                widget.configure(bg="#007acc", fg="white", font=("Arial", 12), activebackground="#005c99", activeforeground="white")
+            elif isinstance(widget, tk.OptionMenu):
+                widget.configure(bg="#e6f2ff", fg="black", font=("Arial", 12))
 
 
     def edit_recipe(self):
@@ -248,40 +283,82 @@ class RecipiesPage:
 
             top = tk.Toplevel(self.master)
             top.title("Edytuj przepis")
+            top.configure(bg="#e6f2ff")
+            font = ("Arial", 12)
 
-            tk.Label(top, text="Nazwa przepisu:").pack()
-            name_entry = tk.Entry(top)
+            tk.Label(top, text="Nazwa przepisu:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
+            name_entry = tk.Entry(top, font=font, bg="white", fg="black")
             name_entry.insert(0, recipe_name)
-            name_entry.pack()
+            name_entry.pack(fill="x", padx=10)
 
-            ingredient_frame = tk.Frame(top)
-            ingredient_frame.pack(pady=10)
+            ingredient_frame = tk.Frame(top, bg="#e6f2ff")
+            ingredient_frame.pack(fill="x", padx=10, pady=10)
 
             ingredient_list = list(ingredients)
 
             def refresh_ingredient_display():
                 for widget in ingredient_frame.winfo_children():
                     widget.destroy()
-                for name, amount, unit in ingredient_list:
-                    tk.Label(ingredient_frame, text=f"{name} - {amount} {unit}").pack(anchor="w")
+
+                for idx, (name, amount, unit) in enumerate(ingredient_list):
+                    row = tk.Frame(ingredient_frame, bg="#e6f2ff")
+                    row.pack(fill="x", padx=5, pady=2)
+
+                    label = tk.Label(row, text=f"{name} - {amount} {unit}", bg="#e6f2ff", fg="black", font=("Arial", 12))
+                    label.pack(side="left", padx=5)
+
+                    def edit_amount(index=idx):
+                        edit_popup = tk.Toplevel(top)
+                        edit_popup.title("Edytuj ilość")
+                        edit_popup.configure(bg="#e6f2ff")
+
+                        tk.Label(edit_popup, text=f"Ilość dla: {ingredient_list[index][0]}", bg="#e6f2ff", fg="black", font=("Arial", 12)).pack(padx=10, pady=(10, 0))
+                        amount_entry = tk.Entry(edit_popup, font=("Arial", 12), bg="white", fg="black")
+                        amount_entry.insert(0, str(ingredient_list[index][1]))
+                        amount_entry.pack(padx=10, pady=5)
+
+                        def confirm_edit():
+                            try:
+                                new_amount = float(amount_entry.get().replace(",", "."))
+                                name, _, unit = ingredient_list[index]
+                                ingredient_list[index] = (name, new_amount, unit)
+                                refresh_ingredient_display()
+                                edit_popup.destroy()
+                            except ValueError:
+                                messagebox.showwarning("Błąd", "Podaj poprawną liczbę.")
+
+                        tk.Button(edit_popup, text="Zapisz", command=confirm_edit,
+                                bg="#007acc", fg="white", font=("Arial", 12), activebackground="#005c99").pack(pady=10)
+
+                    def delete_ingredient(index=idx):
+                        del ingredient_list[index]
+                        refresh_ingredient_display()
+
+                    tk.Button(row, text="Edytuj", command=edit_amount,
+                            bg="#007acc", fg="white", font=("Arial", 12), activebackground="#005c99", width=8).pack(side="right", padx=5)
+                    tk.Button(row, text="Usuń", command=delete_ingredient,
+                            bg="red", fg="white", font=("Arial", 12), activebackground="#990000", width=8).pack(side="right")
+
 
             def add_ingredient_popup():
                 popup = tk.Toplevel(top)
                 popup.title("Dodaj składnik")
+                popup.configure(bg="#e6f2ff")
 
-                tk.Label(popup, text="Nazwa:").pack()
-                name_field = tk.Entry(popup)
-                name_field.pack()
+                tk.Label(popup, text="Nazwa:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
+                name_field = tk.Entry(popup, font=font, bg="white", fg="black")
+                name_field.pack(fill="x", padx=10)
 
-                tk.Label(popup, text="Ilość:").pack()
-                amount_field = tk.Entry(popup)
-                amount_field.pack()
+                tk.Label(popup, text="Ilość:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
+                amount_field = tk.Entry(popup, font=font, bg="white", fg="black")
+                amount_field.pack(fill="x", padx=10)
 
-                tk.Label(popup, text="Jednostka:").pack()
+                tk.Label(popup, text="Jednostka:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10, pady=(10, 0))
                 unit_var = tk.StringVar(popup)
                 unit_var.set("g")
                 unit_menu = tk.OptionMenu(popup, unit_var, "szt.", "ml", "g", "kg", "l", "opak.")
-                unit_menu.pack()
+                unit_menu.config(bg="white", fg="black", font=font, activebackground="#007acc")
+                unit_menu.pack(fill="x", padx=10, pady=(0, 10))
 
                 def confirm_ingredient():
                     name = name_field.get().strip()
@@ -296,20 +373,23 @@ class RecipiesPage:
                         refresh_ingredient_display()
                     popup.destroy()
 
-                tk.Button(popup, text="Dodaj", command=confirm_ingredient).pack(pady=5)
+                tk.Button(popup, text="Dodaj", command=confirm_ingredient,
+                        bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=10)
 
-            tk.Button(top, text="Dodaj składnik", command=add_ingredient_popup).pack()
+            tk.Button(top, text="Dodaj składnik", command=add_ingredient_popup,
+                    bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=(0, 10))
+
             refresh_ingredient_display()
 
-            tk.Label(top, text="Sposób przygotowania:").pack()
-            instructions_text = tk.Text(top, height=5)
+            tk.Label(top, text="Sposób przygotowania:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10)
+            instructions_text = tk.Text(top, height=5, font=font, bg="white", fg="black")
             instructions_text.insert("1.0", instructions)
-            instructions_text.pack()
+            instructions_text.pack(fill="x", padx=10, pady=(0, 10))
 
-            tk.Label(top, text="Ścieżka do zdjęcia:").pack()
-            image_entry = tk.Entry(top)
+            tk.Label(top, text="Ścieżka do zdjęcia:", bg="#e6f2ff", fg="black", font=font).pack(anchor="w", padx=10)
+            image_entry = tk.Entry(top, font=font, bg="white", fg="black")
             image_entry.insert(0, image_path)
-            image_entry.pack()
+            image_entry.pack(fill="x", padx=10)
 
             def browse_image():
                 from tkinter import filedialog
@@ -318,7 +398,8 @@ class RecipiesPage:
                     image_entry.delete(0, tk.END)
                     image_entry.insert(0, path)
 
-            tk.Button(top, text="Przeglądaj...", command=browse_image).pack()
+            tk.Button(top, text="Przeglądaj...", command=browse_image,
+                    bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=5)
 
             def confirm_edit():
                 new_name = name_entry.get().strip()
@@ -345,14 +426,17 @@ class RecipiesPage:
                 top.destroy()
                 self.refresh_recipe_list()
 
-            tk.Button(top, text="Zapisz zmiany", command=confirm_edit).pack(pady=5)
+            tk.Button(top, text="Zapisz zmiany", command=confirm_edit,
+                    bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=10)
 
         choose_window = tk.Toplevel(self.master)
         choose_window.title("Wybierz przepis do edycji")
+        choose_window.configure(bg="#e6f2ff")
+        font = ("Arial", 12)
 
-        tk.Label(choose_window, text="Wybierz przepis do edycji:").pack(pady=5)
+        tk.Label(choose_window, text="Wybierz przepis do edycji:", bg="#e6f2ff", fg="black", font=font).pack(pady=5)
 
-        recipe_listbox = tk.Listbox(choose_window, height=10, width=40)
+        recipe_listbox = tk.Listbox(choose_window, height=10, width=40, font=font, bg="white", fg="black")
         recipe_listbox.pack(padx=10, pady=5)
 
         conn = sqlite3.connect("recipes.db")
@@ -373,8 +457,8 @@ class RecipiesPage:
             choose_window.destroy()
             open_editor_for(recipe_name)
 
-        tk.Button(choose_window, text="Dalej", command=confirm_selection).pack(pady=5)
-
+        tk.Button(choose_window, text="Dalej", command=confirm_selection,
+                bg="#007acc", fg="white", font=font, activebackground="#005c99").pack(pady=10)
 
 
     def refresh_recipe_list(self):
